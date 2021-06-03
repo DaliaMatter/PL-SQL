@@ -1,0 +1,94 @@
+declare
+    COMMISSIONs number(10,2);
+    AGENT_NAMEs CHAR(40);
+begin
+    select COMMISSION, AGENT_NAME into COMMISSIONs, AGENT_NAMEs from AGENTS
+    where AGENT_CODE = 'A007';
+    dbms_output.put_line(AGENT_NAMEs);
+end;
+/
+declare
+    COMMISSIONs AGENTS.COMMISSION%type;
+    AGENT_NAMEs AGENTS.AGENT_NAME%type;
+begin
+    select COMMISSION, AGENT_NAME into COMMISSIONs, AGENT_NAMEs from AGENTS
+    where AGENT_CODE = 'A007';
+    dbms_output.put_line(AGENT_NAMEs);
+end;
+/
+declare
+    pi  CONSTANT NUMBER(7,6) := 3.141592;
+begin
+    dbms_output.put_line(pi);
+end;
+/
+declare
+    pi  CONSTANT NUMBER(7,6) NOT NULL DEFAULT 3.141592;
+begin
+    dbms_output.put_line(pi);
+end;
+/
+VARIABLE bind VARCHAR2(10);
+:bind := 'dalia';
+print :bind;
+BEGIN 
+    :bind := 'dalia';
+    DBMS_OUTPUT.PUT_LINE(:bind);
+END;
+/
+declare
+    num number := 13;
+begin
+    if mod(num,2) = 0 then 
+        dbms_output.put_line('even');
+    else
+        dbms_output.put_line('odd');
+    end if; 
+    dbms_output.put_line('bra l if');
+end;
+/
+declare
+    num number := 0;
+begin
+    loop
+        num := num+1; 
+        dbms_output.put_line(num);
+        exit when num >= 10;
+    end loop;
+end;
+/
+declare
+    num number := 0;
+begin
+    while num < 10 loop
+        num := num+1; 
+        dbms_output.put_line(num);
+        --exit when num >= 10;
+    end loop;
+end;
+/
+declare
+begin
+    for num in REVERSE 1 .. 10 loop
+        dbms_output.put_line(num);
+    end loop;
+end;
+/
+CREATE OR REPLACE TRIGGER tr_superheroes
+BEFORE INSERT OR DELETE OR UPDATE ON superheroes
+FOR EACH ROW
+ENABLE
+DECLARE
+  v_user  VARCHAR2(15);
+BEGIN
+
+  SELECT 
+    user INTO v_user FROM dual;
+  IF INSERTING THEN
+    DBMS_OUTPUT.PUT_LINE('one line inserted by '||v_user);
+  ELSIF DELETING THEN
+    DBMS_OUTPUT.PUT_LINE('one line Deleted by '||v_user);
+  ELSIF UPDATING THEN
+    DBMS_OUTPUT.PUT_LINE('one line Updated by '||v_user);
+  END IF;
+END;
