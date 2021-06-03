@@ -47,6 +47,7 @@ begin
     dbms_output.put_line('bra l if');
 end;
 /
+-- -------------------------- Looping ----------------------------------
 declare
     num number := 0;
 begin
@@ -73,7 +74,9 @@ begin
         dbms_output.put_line(num);
     end loop;
 end;
+-- --------------------------------- End Looping -------------------------
 /
+-- --------------------------DML Triggers---------------------------------
 CREATE OR REPLACE TRIGGER tr_superheroes
 BEFORE INSERT OR DELETE OR UPDATE ON superheroes
 FOR EACH ROW
@@ -92,3 +95,99 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('one line Updated by '||v_user);
   END IF;
 END;
+/
+-- -------------------------- Table Auditing -----------------------------
+CREATE OR REPLACE trigger superheroes_audit
+BEFORE INSERT OR DELETE OR UPDATE ON superheroes
+FOR EACH ROW
+ENABLE
+DECLARE
+  v_user varchar2 (30);
+  v_date  varchar2(30);
+BEGIN
+  SELECT user, TO_CHAR(sysdate, 'DD/MON/YYYY HH24:MI:SS') INTO v_user, v_date  FROM dual;
+  IF INSERTING THEN
+    INSERT INTO sh_audit (new_name,old_name, user_name, entry_date, operation) 
+    VALUES(:NEW.SH_NAME, Null , v_user, v_date, 'Insert');  
+  ELSIF DELETING THEN
+    INSERT INTO sh_audit (new_name,old_name, user_name, entry_date, operation)
+    VALUES(NULL,:OLD.SH_NAME, v_user, v_date, 'Delete');
+  ELSIF UPDATING THEN
+    INSERT INTO sh_audit (new_name,old_name, user_name, entry_date, operation) 
+    VALUES(:NEW.SH_NAME, :OLD.SH_NAME, v_user, v_date,'Update');
+  END IF;
+END;
+/
+-- -------------------- make buckup tabel with DML trigger ------------------------
+CREATE TABLE superheroes_backup AS SELECT * FROM superheroes WHERE 1=2;
+
+CREATE or REPLACE trigger Sh_Backup
+BEFORE INSERT OR DELETE OR UPDATE ON superheroes
+FOR EACH ROW
+ENABLE 
+BEGIN
+  IF INSERTING THEN
+    INSERT INTO superheroes_backup (SH_NAME) VALUES (:NEW.SH_NAME);  
+  ELSIF DELETING THEN
+    DELETE FROM superheroes_backup WHERE SH_NAME =:old.sh_name; 
+  ELSIF UPDATING THEN
+    UPDATE superheroes_backup 
+    SET SH_NAME =:new.sh_name WHERE SH_NAME =:old.sh_name;
+  END IF;
+END;
+/
+-- ----------------------------- DDL Triggers -------------------------------------
+CREATE TABLE schema_audit
+  (
+    ddl_date       DATE,
+    ddl_user       VARCHAR2(15),
+    object_created VARCHAR2(15),
+    object_name    VARCHAR2(15),
+    ddl_operation  VARCHAR2(15)
+  );
+
+CREATE OR REPLACE TRIGGER hr_audit_tr 
+AFTER DDL ON SCHEMA
+BEGIN
+    INSERT INTO schema_audit VALUES (
+sysdate, 
+sys_context('USERENV','CURRENT_USER'), 
+ora_dict_obj_type, 
+ora_dict_obj_name, 
+ora_sysevent);
+END;
+/
+-- ----------------------------- cursor ------------------------------------------
+DECLARE
+  v_name VARCHAR2(300);
+  --Declare Cursor 
+  CURSOR cur_RebellionRider IS 
+  SELECT AGENT_NAME FROM AGENTS 
+  WHERE COMMISSION = 0.15;
+BEGIN
+  OPEN cur_RebellionRider; 
+  LOOP 
+    FETCH cur_RebellionRider INTO v_name; 
+    DBMS_OUTPUT.PUT_LINE (v_name); 
+    EXIT WHEN cur_RebellionRider%NOTFOUND; 
+  END LOOP;--Simple Loop End
+  CLOSE cur_RebellionRider;
+END;
+/
+-- ----------------------- Parametric cursor ----------------------------------
+DECLARE
+  v_name VARCHAR2(300);
+  --Declare Cursor 
+  CURSOR cur_RebellionRider (comm char := 'A007') IS 
+  SELECT AGENT_NAME FROM AGENTS 
+  WHERE AGENT_CODE = comm;
+BEGIN
+  OPEN cur_RebellionRider('A007'); 
+  LOOP 
+    FETCH cur_RebellionRider INTO v_name; 
+    DBMS_OUTPUT.PUT_LINE (v_name); 
+    EXIT WHEN cur_RebellionRider%NOTFOUND; 
+  END LOOP;--Simple Loop End
+  CLOSE cur_RebellionRider;
+END;
+/
